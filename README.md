@@ -4,6 +4,7 @@
 
 - Create an service account with `storage.admin` permissions to create a Bucket.
 - Create a KMS key for encryption.
+- Create a HTTPS certificate for bucket.
 - Create the Bucket.
 - Apply the Bucket Policy.
 - Apply the Bucket Policy for Yandex Cloud Console.
