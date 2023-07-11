@@ -6,6 +6,11 @@ terraform {
       source  = "yandex-cloud/yandex"
       version = "0.92"
     }
+
+    aws = {
+      source  = "hashicorp/aws"
+      version = "5.1.0"
+    }
   }
 }
 
@@ -17,9 +22,6 @@ provider "aws" {
 
 module "s3" {
   source = "../../"
-}
 
-output "bucket_name" {
-  description = "The name of the bucket."
-  value       = module.s3.bucket_name
+  bucket_name = "simple-bucket"
 }

@@ -6,6 +6,11 @@ terraform {
       source  = "yandex-cloud/yandex"
       version = "0.92"
     }
+
+    aws = {
+      source  = "hashicorp/aws"
+      version = "5.1.0"
+    }
   }
 }
 
@@ -18,10 +23,12 @@ provider "aws" {
 module "s3" {
   source = "../../"
 
-  acl = "public-read"
+  bucket_name = "www.example.com"
+  acl         = "public-read"
 
   website = {
-    error_document = "404.html"
+    index_document = "index.html"
+    error_document = "error.html"
     routing_rules = [
       {
         condition = {
@@ -33,19 +40,11 @@ module "s3" {
       }
     ]
   }
-}
 
-output "bucket_name" {
-  description = "The name of the bucket."
-  value       = module.s3.bucket_name
-}
-
-output "website_endpoint" {
-  description = "The website endpoint."
-  value       = module.s3.website_endpoint
-}
-
-output "website_domain" {
-  description = "The domain of the website endpoint."
-  value       = module.s3.website_domain
+  https = {
+    certificate = {
+      public_dns_zone_id = "dnsei3sj93xxxxxxxxxx"
+      domains            = ["www.example.com"]
+    }
+  }
 }

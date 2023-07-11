@@ -14,97 +14,53 @@ variable "storage_admin_service_account" {
       name                        - (Optional) The name of the service account to be generated. Conflicts with `name_prefix` and `existing_account_id`.
       name_prefix                 - (Optional) Prefix of the service account name. A unique service account name will be generated using the prefix. Conflicts with `name` and `existing_account_id`.
       description                 - (Optional) Description of the service account to be generated.
-      existing_account_id         - (Optional) Allows to specify an existing service account ID to manage the bucket. The service account must have `storage.admin` rights in the folder. Conflicts with `name` and `name_prefix`.
+      existing_account_id         - (Optional) Allows to specify an existing service account ID to manage the bucket. The service account must have `storage.admin` permissions in the folder. Conflicts with `name` and `name_prefix`.
       existing_account_access_key - (Optional) The access key of an existing service account to use when applying changes. If omitted, `storage_access_key` specified in provider config is used.
       existing_account_secret_key - (Optional) The secret key of an existing service account to use when applying changes. If omitted, `storage_secret_key` specified in provider config is used.
 
     By default, if the object is not set in the input variables of the module, a service account will be automatically generated with the name prefix `storage-admin`,
     an access key will be automatically generated with random name, and the role of `storage.admin` will be assigned to the generated service account.
   EOF
+  nullable    = false
   type = object({
-    name                        = optional(string, null)
-    name_prefix                 = optional(string, null)
+    name                        = optional(string)
+    name_prefix                 = optional(string)
     description                 = optional(string, "Service account for Object storage admin.")
-    existing_account_id         = optional(string, null)
-    existing_account_access_key = optional(string, null)
-    existing_account_secret_key = optional(string, null)
+    existing_account_id         = optional(string)
+    existing_account_access_key = optional(string)
+    existing_account_secret_key = optional(string)
   })
   validation {
-    condition     = var.storage_admin_service_account != null
-    error_message = "Object \"storage_admin_service_account\" cannot be null."
-  }
-  validation {
-    condition     = !(try(var.storage_admin_service_account.name, null) != null && try(var.storage_admin_service_account.name_prefix, null) != null)
+    condition     = !(var.storage_admin_service_account.name != null && var.storage_admin_service_account.name_prefix != null)
     error_message = "Attributes \"name\" and \"name_prefix\" conflicts. Only one of them should be used."
   }
   validation {
-    condition     = !(try(var.storage_admin_service_account.name, null) != null && try(var.storage_admin_service_account.existing_account_id, null) != null)
+    condition     = !(var.storage_admin_service_account.name != null && var.storage_admin_service_account.existing_account_id != null)
     error_message = "Attributes \"name\" and \"existing_account_id\" conflicts. Only one of them should be used."
   }
   validation {
-    condition     = !(try(var.storage_admin_service_account.name_prefix, null) != null && try(var.storage_admin_service_account.existing_account_id, null) != null)
+    condition     = !(var.storage_admin_service_account.name_prefix != null && var.storage_admin_service_account.existing_account_id != null)
     error_message = "Attributes \"name_prefix\" and \"existing_account_id\" conflicts. Only one of them should be used."
   }
   validation {
-    condition     = !(try(var.storage_admin_service_account.existing_account_id, null) == null && try(var.storage_admin_service_account.existing_account_secret_key, null) != null)
+    condition     = !(var.storage_admin_service_account.existing_account_id == null && var.storage_admin_service_account.existing_account_access_key != null)
     error_message = "Cannot use attribute \"existing_account_access_key\" when attribute \"existing_account_id\" is not set."
   }
   validation {
-    condition     = !(try(var.storage_admin_service_account.existing_account_id, null) == null && try(var.storage_admin_service_account.existing_account_secret_key, null) != null)
+    condition     = !(var.storage_admin_service_account.existing_account_id == null && var.storage_admin_service_account.existing_account_secret_key != null)
     error_message = "Cannot use attribute \"existing_account_secret_key\" when attribute \"existing_account_id\" is not set."
   }
   default = {}
 }
 
-variable "all_access_users" {
-  description = <<EOF
-    (Optional) List of users IDs that will be granted full access to the bucket.
-
-    Example:
-    ```
-      all_access_users = ["federatedUser:ajesnkfkxxxxxxxxxxxx", "federatedUser:ajeurmedxxxxxxxxxxxx"]
-    ```
-  EOF
-  type        = list(string)
-  default     = []
-}
-
-variable "read_only_sa" {
-  description = <<EOF
-    (Optional) List of service account IDs that will be granted read-only access to the bucket.
-
-    Example:
-    ```
-      read_only_sa = ["serviceAccount:ajeph8f8xxxxxxxxxxxx", "serviceAccount:aje066slxxxxxxxxxxxx"]
-    ```
-  EOF
-  type        = list(string)
-  default     = []
-}
-
-variable "write_only_sa" {
-  description = <<EOF
-    (Optional) List of service account IDs that will be granted write-only access to the bucket.
-
-    Example:
-    ```
-      write_only_sa = ["serviceAccount:ajem3ef7xxxxxxxxxxxx", "serviceAccount:aje1ngf4xxxxxxxxxxxx"]
-    ```
-  EOF
-  type        = list(string)
-  default     = []
-}
-
-variable "bucket" {
+variable "bucket_name" {
   type        = string
-  description = "(Optional) The name of the bucket. If omitted, Terraform will assign a random, unique name. Conflicts with `bucket_prefix`."
-  default     = null
-}
-
-variable "bucket_prefix" {
-  description = "(Optional) Creates a unique bucket name beginning with the specified prefix. Conflicts with `bucket`."
-  type        = string
-  default     = null
+  description = "(Required) The name of the bucket."
+  validation {
+    condition     = var.bucket_name != null
+    error_message = "Bucket name is not set."
+  }
+  default = null
 }
 
 variable "force_destroy" {
@@ -120,7 +76,7 @@ variable "acl" {
     For more information see https://cloud.yandex.com/en/docs/storage/concepts/acl#predefined-acls.
   EOF
   type        = string
-  default     = "private"
+  default     = null
 }
 
 variable "grant" {
@@ -135,6 +91,7 @@ variable "grant" {
       uri         - (Optional) System group URI.
       permissions - (Required) List of assigned permissions.
   EOF
+  nullable    = false
   type = list(object({
     id          = optional(string)
     type        = string
@@ -149,12 +106,13 @@ variable "policy" {
     (Optional) Object storage policy.
     For more information see https://cloud.yandex.com/en/docs/storage/concepts/policy.
 
-    NOTE: The Yandex Cloud Console access policy is defined in a separate `policy_console` variable.
+    NOTE: Bucket policy for Yandex Cloud Console is defined in a separate `policy_console` variable.
 
     Configuration attributes:
+      enabled    - (Required) Enable policy.
       id         - (Optional) General information about the policy. Some Yandex Cloud services require the uniqueness of this value.
       version    - (Optional) Access policy description version. Possible values is `2012-10-17`.
-      statements - (Required) List of bucket policy rules.
+      statements - (Optional) List of bucket policy rules.
 
     Objects in the `statements` supports the following attributes:
       sid           - (Optional) Rule ID.
@@ -178,11 +136,11 @@ variable "policy" {
       key    - (Required) Specifies the condition whose value will be checked.
       values - (Required) List of values.
   EOF
+  nullable    = false
   type = object({
-    id      = optional(string, null)
-    version = optional(string, null)
-    statements = list(object({
-      sid       = optional(string, null)
+    enabled = bool
+    statements = optional(list(object({
+      sid       = optional(string)
       effect    = optional(string)
       actions   = list(string)
       resources = list(string)
@@ -199,58 +157,89 @@ variable "policy" {
         key    = string
         values = list(any)
       }))
-    }))
+    })))
   })
   validation {
-    condition     = try((var.policy.statements == null ? tobool(false) : tobool(true)), tobool(true))
-    error_message = "Policy \"statements\" cannot be null."
+    condition     = try((length(var.policy.statements) != 0), true)
+    error_message = "Policy \"statements\" cannot be empty list."
   }
-  validation {
-    condition     = try((length(var.policy.statements) == 0 ? tobool(false) : tobool(true)), tobool(true))
-    error_message = "Policy \"statements\" cannot be empty."
-  }
+
+  # Explanation of the conditions below.
+
+  # First, determine whether the `policy` is set and whether can get a list of objects in `statements`:
+  #   try(coalesce(var.policy.statements, []), [])
+  # Here:
+  #   - if `var.policy.statements` does not exist because no policy is set (var.policy = null), 
+  # then the `coalesce` function will return an error, which will be handled by the `try` function and return an empty list as a fallback.
+  #   - if `var.policy.statements` is null, assume that the variable does not have a valid value.
+  # The `coalesce` function will skip the value and return an empty list as a fallback.
+  #   - in other cases, a list of objects in `statements` will be returned.
+
+  # Then, for each object in the list of `statements`, check the values of `principal` and `not_principal`.
+  # If both are not set then return true. Collect all the results in a list for checking by the `anytrue` function.
+  # If at least one object returns true, then consider the condition not fulfilled.
   validation {
     condition = !(anytrue([
-      for k in try((var.policy.statements != null ? var.policy.statements : []), []) :
+      for k in try(coalesce(var.policy.statements, []), []) :
       k.principal == null && k.not_principal == null
     ]))
     error_message = "One of \"principal\" or \"not_principal\" should be specified in every \"statement\"."
   }
+
+  # For each object in the list of `statements`, check that both `principal` and `not_principal` are not set at the same time.
+  # If both are not set then return true. Collect all the results in a list for checking by the `anytrue` function.
+  # If at least one object returns true, then consider the condition not fulfilled.
   validation {
     condition = !(anytrue([
-      for k in try((var.policy.statements != null ? var.policy.statements : []), []) :
+      for k in try(coalesce(var.policy.statements, []), []) :
       k.principal != null && k.not_principal != null
     ]))
-    error_message = "Only one of \"principal\" or \"not_principal\" should be specified in every \"statement\"."
+    error_message = "Attributes \"principal\" and \"not_principal\" conflicts. Only one of them should be used in every \"statement\"."
   }
+
+  # For each object in the list of `statements`, validate the value of `principal`, if it is set.
+  # Collect all the results in a list for checking by the `alltrue` function.
+  # If at least one object returns false, then consider the condition not fulfilled.
   validation {
     condition = alltrue([
-      for k in try((var.policy.statements != null ? var.policy.statements : []), []) :
+      for k in try(coalesce(var.policy.statements, []), []) :
       contains(["*", "CanonicalUser"], k.principal.type) if k.principal != null
     ])
     error_message = "Principal type valid value is \"*\" or \"CanonicalUser\"."
   }
+
+  # For each object in the list of `statements`, validate the value of `not_principal`, if it is set.
+  # Collect all the results in a list for checking by the `alltrue` function.
+  # If at least one object returns false, then consider the condition not fulfilled.
   validation {
     condition = alltrue([
-      for k in try((var.policy.statements != null ? var.policy.statements : []), []) :
+      for k in try(coalesce(var.policy.statements, []), []) :
       contains(["CanonicalUser"], k.not_principal.type) if k.not_principal != null
     ])
     error_message = "NotPrincipal type valid value is \"CanonicalUser\"."
   }
+
+  # For each object in the `statements` list, validate the values of the `condition` object.
+  # For the `type` and `key` attributes, check for a match with specific values.
+  # The `values` attribute is a list, each value of which is checked for a match by a regular expression. If at least one element matches, then return true.
+  # Finally, collect all the results of validation of the `condition` objects into a list for checking by the `anytrue` function.
+  # If at least one object returns true, then we consider the condition not fulfilled.
   validation {
     condition = !(anytrue([
-      for k in try((var.policy.statements != null ? var.policy.statements : []), []) :
-      try(k.condition.type == "StringLike" ? tobool(true) : tobool(false), tobool(false)) &&
-      try(k.condition.key == "aws:referer" ? tobool(true) : tobool(false), tobool(false)) &&
+      for k in try(coalesce(var.policy.statements, []), []) :
+      try(k.condition.type == "StringLike", false) &&
+      try(k.condition.key == "aws:referer", false) &&
       try(k.condition.values != null ? anytrue([
         for item in k.condition.values :
         can(regex("^https?://console.cloud.yandex", item))
-        ]) : tobool(false),
-      tobool(false))
+        ]) : false,
+      false)
     ]))
     error_message = "Policy rule for Yandex Cloud Console should be specified in \"policy_console\" variable."
   }
-  default = null
+  default = {
+    enabled = false
+  }
 }
 
 variable "policy_console" {
@@ -259,10 +248,7 @@ variable "policy_console" {
     For more information see https://cloud.yandex.com/en/docs/storage/concepts/policy#console-access.
 
     Configuration attributes:
-      bucket_name - (Required) Name of the bucket.
-      statements  - (Required) List of bucket policy rules for Yandex Cloud Console.
-
-    Objects in the `statements` supports the following attributes:
+      enabled       - (Required) Enable policy for Yandex Cloud Console.
       sid           - (Optional) Rule ID.
       effect        - (Optional) Specifies whether the requested action is denied or allowed. Possible values: `Allow`, `Deny`. Defaults to `Allow`.
       principal     - (Optional) ID of the recipient of the requested permission.
@@ -276,58 +262,35 @@ variable "policy_console" {
       type        - (Required) Type of the entity. Possible value is `CanonicalUser`.
       identifiers - (Required) List of IDs.
   EOF
+  nullable    = false
   type = object({
-    bucket_name = string
-    statements = list(object({
-      sid    = optional(string, null)
-      effect = optional(string)
-      principal = optional(object({
-        type        = string
-        identifiers = list(string)
-      }))
-      not_principal = optional(object({
-        type        = string
-        identifiers = list(string)
-      }))
+    enabled = bool
+    sid     = optional(string)
+    effect  = optional(string)
+    principal = optional(object({
+      type        = string
+      identifiers = list(string)
+    }))
+    not_principal = optional(object({
+      type        = string
+      identifiers = list(string)
     }))
   })
   validation {
-    condition     = try((var.policy_console.statements == null ? tobool(false) : tobool(true)), tobool(true))
-    error_message = "Policy \"statements\" cannot be null."
+    condition     = !(var.policy_console.principal != null && var.policy_console.not_principal != null)
+    error_message = "Attributes \"principal\" and \"not_principal\" conflicts. Only one of them should be used."
   }
   validation {
-    condition     = try((length(var.policy_console.statements) == 0 ? tobool(false) : tobool(true)), tobool(true))
-    error_message = "Policy \"statements\" cannot be empty."
-  }
-  validation {
-    condition = !(anytrue([
-      for k in try((var.policy_console.statements != null ? var.policy_console.statements : []), []) :
-      k.principal == null && k.not_principal == null
-    ]))
-    error_message = "One of \"principal\" or \"not_principal\" should be specified in every \"statement\"."
-  }
-  validation {
-    condition = !(anytrue([
-      for k in try((var.policy_console.statements != null ? var.policy_console.statements : []), []) :
-      k.principal != null && k.not_principal != null
-    ]))
-    error_message = "Only one of \"principal\" or \"not_principal\" should be specified in every \"statement\"."
-  }
-  validation {
-    condition = alltrue([
-      for k in try((var.policy_console.statements != null ? var.policy_console.statements : []), []) :
-      contains(["*", "CanonicalUser"], k.principal.type) if k.principal != null
-    ])
+    condition     = try(contains(["*", "CanonicalUser"], var.policy_console.principal.type), true)
     error_message = "Principal type valid value is \"*\" or \"CanonicalUser\"."
   }
   validation {
-    condition = alltrue([
-      for k in try((var.policy_console.statements != null ? var.policy_console.statements : []), []) :
-      contains(["CanonicalUser"], k.not_principal.type) if k.not_principal != null
-    ])
+    condition     = try(contains(["CanonicalUser"], var.policy_console.not_principal.type), true)
     error_message = "NotPrincipal type valid value is \"CanonicalUser\"."
   }
-  default = null
+  default = {
+    enabled = false
+  }
 }
 
 variable "cors_rule" {
@@ -342,6 +305,7 @@ variable "cors_rule" {
       expose_headers  - (Optional) Specifies expose header in the response.
       max_age_seconds - (Optional) Specifies time in seconds that browser can cache the response for a preflight request.
   EOF
+  nullable    = false
   type = list(object({
     allowed_headers = optional(set(string))
     allowed_methods = set(string)
@@ -394,41 +358,65 @@ variable "website" {
     error_document = optional(string)
     routing_rules = optional(list(object({
       condition = optional(object({
-        key_prefix_equals               = optional(string, null)
-        http_error_code_returned_equals = optional(string, null)
+        key_prefix_equals               = optional(string)
+        http_error_code_returned_equals = optional(string)
       }))
       redirect = object({
-        protocol                = optional(string, null)
-        host_name               = optional(string, null)
-        replace_key_prefix_with = optional(string, null)
-        replace_key_with        = optional(string, null)
-        http_redirect_code      = optional(string, null)
+        protocol                = optional(string)
+        host_name               = optional(string)
+        replace_key_prefix_with = optional(string)
+        replace_key_with        = optional(string)
+        http_redirect_code      = optional(string)
       })
     })))
     redirect_all_requests_to = optional(string)
   })
+
+  validation {
+    condition     = try((length(var.website.routing_rules) != 0), true)
+    error_message = "Website \"routing_rules\" cannot be empty list."
+  }
+
+  # Explanation of the conditions below.
+
+  # First, determine whether the `website` is set and whether can get a list of objects in `routing_rules`:
+  #   try(coalesce(var.website.routing_rules, []), [])
+  # Here:
+  #   - if `var.website.routing_rules` does not exist because no policy is set (var.website = null), 
+  # then the `coalesce` function will return an error, which will be handled by the `try` function and return an empty list as a fallback.
+  #   - if `var.website.routing_rules` is null, assume that the variable does not have a valid value.
+  # The `coalesce` function will skip the value and return an empty list as a fallback.
+  #   - in other cases, a list of objects in `routing_rules` will be returned.
+
+  # Then, for each object in the list of `routing_rules`, check the values of `replace_key_with` and `replace_key_prefix_with`.
+  # If both are set at the same time then return true. Collect all the results in a list for checking by the `anytrue` function.
+  # If at least one object returns true, then consider the condition not fulfilled.
   validation {
     condition = !(anytrue([
-      for k in try((var.website.routing_rules != null ? var.website.routing_rules : []), []) :
+      for k in try(coalesce(var.website.routing_rules, []), []) :
       k.redirect.replace_key_prefix_with != null && k.redirect.replace_key_with != null
     ]))
-    error_message = "Only one of \"replace_key_prefix_with\" or \"replace_key_with\" should be specified in \"redirect\" rule."
+    error_message = "Attributes \"replace_key_prefix_with\" and \"replace_key_with\" conflicts. Only one of them should be used in each \"redirect\" rule."
   }
-  validation {
-    condition     = try((length(var.website.routing_rules) == 0 ? tobool(false) : tobool(true)), tobool(true))
-    error_message = "Website \"routing_rules\" cannot be empty."
-  }
+
+  # For each object in the list of `routing_rules`, validate the value of `redirect.protocol`, if it is set.
+  # Collect all the results in a list for checking by the `alltrue` function.
+  # If at least one object returns false, then consider the condition not fulfilled.
   validation {
     condition = alltrue([
-      for k in try((var.website.routing_rules != null ? var.website.routing_rules : []), []) :
+      for k in try(coalesce(var.website.routing_rules, []), []) :
       contains(["http", "https"], k.redirect.protocol) if k.redirect.protocol != null
     ])
     error_message = "Website redirect \"protocol\" valid value is \"http\" or \"https\"."
   }
+
+  # For each object in the list of `routing_rules`, validate the value of `redirect.http_redirect_code`, if it is set.
+  # Collect all the results in a list for checking by the `alltrue` function.
+  # If at least one object returns false, then consider the condition not fulfilled.
   validation {
     condition = alltrue([
-      for k in try((var.website.routing_rules != null ? var.website.routing_rules : []), []) :
-      can(regex("30[0-8]", k.redirect.http_redirect_code)) if k.redirect.http_redirect_code != null
+      for k in try(coalesce(var.website.routing_rules, []), []) :
+      can(regex("^30[0-8]$", k.redirect.http_redirect_code)) if k.redirect.http_redirect_code != null
     ])
     error_message = <<EOF
       Only valid 3xx Redirection code are allowed in "http_redirect_code".
@@ -530,6 +518,7 @@ variable "lifecycle_rule" {
       days          - (Required) Specifies the number of days noncurrent object versions transition.
       storage_class - (Required) Specifies the storage class to which you want the noncurrent object versions to transition. Can only be `COLD` or `STANDARD_IA`.
   EOF
+  nullable    = false
   type = list(object({
     enabled                                = bool
     id                                     = optional(string)
@@ -564,12 +553,13 @@ variable "server_side_encryption_configuration" {
     Configuration attributes:
       enabled           - (Required) Enable server-side encryption for the bucket.
       sse_algorithm     - (Required) The server-side encryption algorithm to use. Single valid value is `aws:kms`.
-      kms_master_key_id - (Optional) The KMS master key ID used for the SSE-KMS encryption. Allows to specify an existing KMS key for the server-side encryption. If omitted, the KMS key will be generated with parameters in the `sse_kms_key_configuration` variable.
+      kms_master_key_id - (Optional) The KMS master key ID used for the server-side encryption. Allows to specify an existing KMS key for the server-side encryption. If omitted, the KMS key will be generated with parameters in the `sse_kms_key_configuration` variable.
   EOF
+  nullable    = false
   type = object({
     enabled           = bool
     sse_algorithm     = optional(string, "aws:kms")
-    kms_master_key_id = optional(string, null)
+    kms_master_key_id = optional(string)
   })
   validation {
     condition     = contains(["aws:kms"], var.server_side_encryption_configuration.sse_algorithm)
@@ -585,19 +575,21 @@ variable "sse_kms_key_configuration" {
     (Optional) Object with a KMS key configuration.
     For more information see https://cloud.yandex.com/en/docs/kms/concepts.
 
-    Only used for an auto-generated KMS key if `kms_master_key_id` is not set in input variables in `server_side_encryption_configuration`.
+    Only used for an auto-generated KMS key.
+    Will be ignored, if attribute `kms_master_key_id` is set in variable `server_side_encryption_configuration`.
 
     Configuration attributes:
       name                - (Optional) Name of the key. If omitted, Terraform will assign a random, unique name. Conflicts with `name_prefix`.
       name_prefix         - (Optional) Prefix of the key name. A unique KMS key name will be generated using the prefix. Conflicts with `name`.
       description         - (Optional) Description of the key.
-      default_algorithm   - (Optional) Encryption algorithm to be used with a new key version, generated with the next rotation. The default value is `AES_256`.
-      rotation_period     - (Optional) Interval between automatic rotations. To disable automatic rotation, omit this parameter. The default value is `8760h` (1 year).
-      deletion_protection - (Optional) Prevents key deletion. The default value is `false`.
+      default_algorithm   - (Optional) Encryption algorithm to be used with a new key version, generated with the next rotation. Default value is `AES_256`.
+      rotation_period     - (Optional) Interval between automatic rotations. To disable automatic rotation, omit this parameter. Default value is `8760h` (1 year).
+      deletion_protection - (Optional) Prevents key deletion. Default value is `false`.
   EOF
+  nullable    = false
   type = object({
-    name                = optional(string, null)
-    name_prefix         = optional(string, null)
+    name                = optional(string)
+    name_prefix         = optional(string)
     description         = optional(string, "KMS key for Object storage server-side encryption.")
     default_algorithm   = optional(string, "AES_256")
     rotation_period     = optional(string, "8760h")
@@ -664,12 +656,12 @@ variable "anonymous_access_flags" {
     (Optional) Object provides various access to objects.
     For more information see https://cloud.yandex.com/en/docs/storage/operations/buckets/bucket-availability.
 
-    It will try to create bucket using IAM-token in provider config, not using access_key.
-
     Configuration attributes:
       list        - (Optional) Allows to read objects in bucket anonymously.
       read        - (Optional) Allows to list object in bucket anonymously.
       config_read - (Optional) Allows to list bucket configuration anonymously.
+
+    It will try to create bucket using IAM-token in provider config, not using access_key.
   EOF
   type = object({
     list        = optional(bool)
@@ -681,16 +673,51 @@ variable "anonymous_access_flags" {
 
 variable "https" {
   description = <<EOF
-    (Optional) Object manages https certificates for bucket.
+    (Optional) Object manages https certificate for bucket.
     For more information see https://cloud.yandex.com/en/docs/storage/operations/hosting/certificate.
 
-    It will try to create bucket using IAM-token in provider config, not using access_key.
+    At least one of `certificate`, `existing_certificate_id` must be specified.
 
     Configuration attributes:
-      certificate_id - (Required) Id of the certificate in Yandex Cloud Certificate Manager, that will be used for bucket.
+      existing_certificate_id - (Optional) Id of an existing certificate in Yandex Cloud Certificate Manager, that will be used for the bucket.
+      certificate             - (Optional) Object allows to manage the parameters for generating a managed HTTPS certificate in Yandex Cloud Certificate Manager.
+
+    The `certificate` object supports the following attributes:
+      domains             - (Required) Domains for this certificate.
+      public_dns_zone_id  - (Required) The id of the DNS zone in which record set will reside.
+      dns_records_ttl     - (Optional) The time-to-live of DNS record set (seconds). Default value is `300`.
+      name                - (Optional) Certificate name. Conflicts with `name_prefix`.
+      name_prefix         - (Optional) Prefix of the certificate name. A unique certificate name will be generated using the prefix. Default value is `s3-https-certificate`. Conflicts with `name`.
+      description         - (Optional) Certificate description.
+      labels              - (Optional) Labels to assign to certificate.
+      deletion_protection - (Optional) Prevents certificate deletion. Default value is `false`.
+
+    It will try to create bucket using IAM-token in provider config, not using access_key.
   EOF
   type = object({
-    certificate_id = string
+    existing_certificate_id = optional(string)
+    certificate = optional(object({
+      domains             = set(string)
+      public_dns_zone_id  = string
+      dns_records_ttl     = optional(number, 300)
+      name                = optional(string)
+      name_prefix         = optional(string)
+      description         = optional(string, "Certificate for S3 static website.")
+      labels              = optional(map(string))
+      deletion_protection = optional(bool, false)
+    }))
   })
+  validation {
+    condition     = !(try(var.https.certificate == null, false) && try(var.https.existing_certificate_id == null, false))
+    error_message = "One of \"certificate\" or \"existing_certificate_id\" is required."
+  }
+  validation {
+    condition     = !(try(var.https.certificate != null, false) && try(var.https.existing_certificate_id != null, false))
+    error_message = "Attributes \"certificate\" and \"existing_certificate_id\" conflicts. Only one of them should be used."
+  }
+  validation {
+    condition     = !(try(var.https.certificate.name != null, false) && try(var.https.certificate.name_prefix != null, false))
+    error_message = "Certificate attributes \"name\" and \"name_prefix\" conflicts. Only one of them should be used."
+  }
   default = null
 }
