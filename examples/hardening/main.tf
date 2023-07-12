@@ -1,33 +1,20 @@
-terraform {
-  required_version = ">= 1.3.0"
-
-  required_providers {
-    yandex = {
-      source  = "yandex-cloud/yandex"
-      version = "0.92"
-    }
-
-    aws = {
-      source  = "hashicorp/aws"
-      version = "5.1.0"
-    }
-  }
-}
-
-provider "aws" {
-  skip_region_validation      = true
-  skip_credentials_validation = true
-  skip_requesting_account_id  = true
+# To always have a unique bucket name in this example
+resource "random_string" "unique_id" {
+  length  = 8
+  upper   = false
+  lower   = true
+  numeric = true
+  special = false
 }
 
 locals {
-  bucket_name = "hardening-bucket"
+  bucket_name = "hardening-bucket-${random_string.unique_id.result}"
 }
 
 module "log_bucket" {
   source = "../../"
 
-  bucket_name = "logging-bucket"
+  bucket_name = "logging-bucket-${random_string.unique_id.result}"
 }
 
 module "s3" {
@@ -35,27 +22,12 @@ module "s3" {
 
   bucket_name = local.bucket_name
 
-  # In this example, we allow access to the bucket to everyone except "serviceAccount:ajeph8f8xxxxxxxxxxxx".
-  # "serviceAccount:ajeph8f8xxxxxxxxxxxx" is allowed to upload objects to the bucket from certain IP addresses.
-  # Also access from the Yandex Cloud Console is disabled for "serviceAccount:ajeph8f8xxxxxxxxxxxx".
+  # In this example, we allow each user authenticated in Yandex Cloud to upload objects to the bucket from certain IP addresses.
   policy = {
     enabled = true
     statements = [
       {
-        sid     = "example-rule-allow-all-for-all-except-sa"
-        effect  = "Allow"
-        actions = ["s3:*"]
-        not_principal = {
-          type        = "CanonicalUser"
-          identifiers = ["serviceAccount:ajeph8f8xxxxxxxxxxxx"]
-        }
-        resources = [
-          "${local.bucket_name}",
-          "${local.bucket_name}/*"
-        ]
-      },
-      {
-        sid     = "example-rule-allow-upload-from-ip-for-sa"
+        sid     = "example-rule-allow-upload-from-ip-for-all-auth-users"
         effect  = "Allow"
         actions = ["s3:PutObject"]
         resources = [
@@ -64,7 +36,7 @@ module "s3" {
         ]
         principal = {
           type        = "CanonicalUser"
-          identifiers = ["serviceAccount:ajeph8f8xxxxxxxxxxxx"]
+          identifiers = ["system:allAuthenticatedUsers"]
         }
         condition = {
           type   = "IpAddress"
@@ -75,12 +47,9 @@ module "s3" {
     ]
   }
 
+  # Access to the bucket from the Yandex Cloud Console is enabled for everyone who has access to the Cloud Folder.
   policy_console = {
     enabled = true
-    not_principal = {
-      type        = "CanonicalUser"
-      identifiers = ["serviceAccount:ajeph8f8xxxxxxxxxxxx"]
-    }
   }
 
   versioning = {

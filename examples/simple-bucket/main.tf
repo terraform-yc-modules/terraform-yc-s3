@@ -1,27 +1,14 @@
-terraform {
-  required_version = ">= 1.3.0"
-
-  required_providers {
-    yandex = {
-      source  = "yandex-cloud/yandex"
-      version = "0.92"
-    }
-
-    aws = {
-      source  = "hashicorp/aws"
-      version = "5.1.0"
-    }
-  }
-}
-
-provider "aws" {
-  skip_region_validation      = true
-  skip_credentials_validation = true
-  skip_requesting_account_id  = true
+# To always have a unique bucket name in this example
+resource "random_string" "unique_id" {
+  length  = 8
+  upper   = false
+  lower   = true
+  numeric = true
+  special = false
 }
 
 module "s3" {
   source = "../../"
 
-  bucket_name = "simple-bucket"
+  bucket_name = "simple-bucket-${random_string.unique_id.result}"
 }

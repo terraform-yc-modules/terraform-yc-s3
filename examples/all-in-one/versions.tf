@@ -7,14 +7,20 @@ terraform {
       version = "0.92"
     }
 
-    random = {
-      source  = "hashicorp/random"
-      version = "3.5.1"
-    }
-
     aws = {
       source  = "hashicorp/aws"
       version = "5.1.0"
     }
+
+    random = {
+      source  = "hashicorp/random"
+      version = "3.5.1"
+    }
   }
+}
+
+provider "aws" {
+  skip_region_validation      = true
+  skip_credentials_validation = true
+  skip_requesting_account_id  = true
 }

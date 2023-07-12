@@ -132,16 +132,16 @@ See [examples section](./examples/)
 | Name | Version |
 |------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.3.0 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 5.1.0 |
-| <a name="requirement_random"></a> [random](#requirement\_random) | > 3.3 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | 5.1.0 |
+| <a name="requirement_random"></a> [random](#requirement\_random) | 3.5.1 |
 | <a name="requirement_yandex"></a> [yandex](#requirement\_yandex) | 0.92 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 5.1.0 |
-| <a name="provider_random"></a> [random](#provider\_random) | > 3.3 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 5.1.0 |
+| <a name="provider_random"></a> [random](#provider\_random) | 3.5.1 |
 | <a name="provider_yandex"></a> [yandex](#provider\_yandex) | 0.92 |
 
 ## Modules
@@ -152,7 +152,7 @@ No modules.
 
 | Name | Type |
 |------|------|
-| [random_string.unique_id](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/string) | resource |
+| [random_string.unique_id](https://registry.terraform.io/providers/hashicorp/random/3.5.1/docs/resources/string) | resource |
 | [yandex_cm_certificate.this](https://registry.terraform.io/providers/yandex-cloud/yandex/0.92/docs/resources/cm_certificate) | resource |
 | [yandex_dns_recordset.this](https://registry.terraform.io/providers/yandex-cloud/yandex/0.92/docs/resources/dns_recordset) | resource |
 | [yandex_iam_service_account.storage_admin](https://registry.terraform.io/providers/yandex-cloud/yandex/0.92/docs/resources/iam_service_account) | resource |
@@ -161,7 +161,7 @@ No modules.
 | [yandex_resourcemanager_folder_iam_member.kms_storage_admin_sa](https://registry.terraform.io/providers/yandex-cloud/yandex/0.92/docs/resources/resourcemanager_folder_iam_member) | resource |
 | [yandex_resourcemanager_folder_iam_member.storage_admin](https://registry.terraform.io/providers/yandex-cloud/yandex/0.92/docs/resources/resourcemanager_folder_iam_member) | resource |
 | [yandex_storage_bucket.this](https://registry.terraform.io/providers/yandex-cloud/yandex/0.92/docs/resources/storage_bucket) | resource |
-| [aws_iam_policy_document.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
+| [aws_iam_policy_document.this](https://registry.terraform.io/providers/hashicorp/aws/5.1.0/docs/data-sources/iam_policy_document) | data source |
 | [yandex_client_config.client](https://registry.terraform.io/providers/yandex-cloud/yandex/0.92/docs/data-sources/client_config) | data source |
 | [yandex_iam_service_account.existing_account](https://registry.terraform.io/providers/yandex-cloud/yandex/0.92/docs/data-sources/iam_service_account) | data source |
 
