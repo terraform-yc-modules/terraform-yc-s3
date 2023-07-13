@@ -7,3 +7,13 @@ variable "public_dns_zone_id" {
   }
   default = null
 }
+
+variable "domains" {
+  description = "List of domains in HTTPS certificate"
+  type        = list(string)
+  validation {
+    condition     = length(var.domains) != 0
+    error_message = "Please set the variable \"domains\" to run this example."
+  }
+  default = []
+}

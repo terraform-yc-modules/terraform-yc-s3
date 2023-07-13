@@ -31,7 +31,7 @@ module "s3" {
   https = {
     certificate = {
       public_dns_zone_id = var.public_dns_zone_id
-      domains            = ["www.example.com"]
+      domains            = var.domains
     }
   }
 }
