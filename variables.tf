@@ -61,8 +61,8 @@ variable "bucket_name" {
     error_message = "Bucket name is not set."
   }
   validation {
-    condition     = !can(regex("[^A-Za-z-.]", var.bucket_name))
-    error_message = "The name of the bucket can contain only a-z, A-Z, \"-\" and \".\""
+    condition     = !can(regex("[^A-Za-z0-9-.]", var.bucket_name))
+    error_message = "The name of the bucket can contain only a-z, A-Z, 0-9, \"-\" and \".\""
   }
   default = null
 }
