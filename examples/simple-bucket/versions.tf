@@ -4,17 +4,17 @@ terraform {
   required_providers {
     yandex = {
       source  = "yandex-cloud/yandex"
-      version = "0.92"
+      version = "> 0.9"
     }
 
     aws = {
       source  = "hashicorp/aws"
-      version = "5.1.0"
+      version = "> 5.1"
     }
 
     random = {
       source  = "hashicorp/random"
-      version = "3.5.1"
+      version = "> 3.5"
     }
   }
 }
