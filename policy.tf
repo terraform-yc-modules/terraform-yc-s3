@@ -53,7 +53,7 @@ data "aws_iam_policy_document" "this" {
       condition {
         test     = "StringLike"
         variable = "aws:referer"
-        values   = ["https://console.cloud.yandex.*/folders/*/storage/buckets/${var.bucket_name}*"]
+        values   = ["https://console.yandex.cloud/folders/*/storage/buckets/${var.bucket_name}*"]
       }
 
       dynamic "principals" {
