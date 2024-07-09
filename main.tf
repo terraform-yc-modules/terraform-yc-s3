@@ -212,11 +212,6 @@ resource "yandex_storage_bucket" "this" {
       condition     = var.object_lock_configuration == null || (try(var.versioning.enabled, false) && var.object_lock_configuration != null)
       error_message = "Bucket versioning must be enabled for object lock."
     }
-
-    precondition {
-      condition     = !(var.folder_id != null && try(data.yandex_iam_service_account.existing_account[0].folder_id != var.folder_id, false))
-      error_message = "The specified existing storage admin service account does not exist in the specified folder."
-    }
   }
 
   depends_on = [
