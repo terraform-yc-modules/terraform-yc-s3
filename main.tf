@@ -187,7 +187,7 @@ resource "yandex_storage_bucket" "this" {
   tags = var.tags
 
   # Extended parameters of the bucket which use extended API and requires IAM token to be set in provider block.
-  folder_id             = var.folder_id
+  folder_id             = local.folder_id
   max_size              = var.max_size
   default_storage_class = var.default_storage_class
 
@@ -214,7 +214,7 @@ resource "yandex_storage_bucket" "this" {
     }
 
     precondition {
-      condition     = !(var.folder_id != null && try(data.yandex_iam_service_account.existing_account[0].folder_id != var.folder_id, false))
+      condition     = !(local.folder_id != null && try(data.yandex_iam_service_account.existing_account[0].folder_id != local.folder_id, false))
       error_message = "The specified existing storage admin service account does not exist in the specified folder."
     }
   }
