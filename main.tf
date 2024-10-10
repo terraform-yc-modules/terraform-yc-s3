@@ -57,8 +57,8 @@ locals {
 resource "yandex_storage_bucket" "this" {
   bucket = var.bucket_name
 
-  access_key = try(yandex_iam_service_account_static_access_key.storage_admin[0].access_key, var.storage_admin_service_account.existing_account_access_key)
-  secret_key = try(yandex_iam_service_account_static_access_key.storage_admin[0].secret_key, var.storage_admin_service_account.existing_account_secret_key)
+  access_key = try(var.existing_service_account.access_key, null)
+  secret_key = try(var.existing_service_account.secret_key, null)
 
   force_destroy = var.force_destroy
   acl           = var.acl
@@ -72,8 +72,6 @@ resource "yandex_storage_bucket" "this" {
       permissions = grant.value.permissions
     }
   }
-
-  policy = try(data.aws_iam_policy_document.this[0].json, null)
 
   dynamic "cors_rule" {
     for_each = var.cors_rule
@@ -207,19 +205,13 @@ resource "yandex_storage_bucket" "this" {
     }
   }
 
+  policy = try(data.aws_iam_policy_document.this[0].json, null)
+
+
   lifecycle {
     precondition {
       condition     = var.object_lock_configuration == null || (try(var.versioning.enabled, false) && var.object_lock_configuration != null)
       error_message = "Bucket versioning must be enabled for object lock."
     }
-
-    precondition {
-      condition     = !(local.folder_id != null && try(data.yandex_iam_service_account.existing_account[0].folder_id != local.folder_id, false))
-      error_message = "The specified existing storage admin service account does not exist in the specified folder."
-    }
   }
-
-  depends_on = [
-    yandex_resourcemanager_folder_iam_member.storage_admin
-  ]
 }

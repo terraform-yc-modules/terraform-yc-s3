@@ -6,49 +6,31 @@ resource "random_string" "unique_id" {
   special = false
 }
 
-variable "storage_admin_service_account" {
+variable "existing_service_account" {
   description = <<EOF
-    (Optional) Allows to manage storage admin service account for the bucket.
+    (Optional) Allows to specify an existing service account ID to manage the bucket. The service account must have `storage.admin` permissions in the folder.
 
     Configuration attributes:
-      name                        - (Optional) The name of the service account to be generated. Conflicts with `name_prefix` and `existing_account_id`.
-      name_prefix                 - (Optional) Prefix of the service account name. A unique service account name will be generated using the prefix. Conflicts with `name` and `existing_account_id`.
-      description                 - (Optional) Description of the service account to be generated.
-      existing_account_id         - (Optional) Allows to specify an existing service account ID to manage the bucket. The service account must have `storage.admin` permissions in the folder. Conflicts with `name` and `name_prefix`.
+      id         - (Optional) Allows to specify an existing service account ID to manage the bucket. The service account must have `storage.admin` permissions in the folder. Conflicts with `name` and `name_prefix`.
       existing_account_access_key - (Optional) The access key of an existing service account to use when applying changes. If omitted, `storage_access_key` specified in provider config is used.
       existing_account_secret_key - (Optional) The secret key of an existing service account to use when applying changes. If omitted, `storage_secret_key` specified in provider config is used.
 
-    By default, if the object is not set in the input variables of the module, a service account will be automatically generated with the name prefix `storage-admin`,
-    an access key will be automatically generated with random name, and the role of `storage.admin` will be assigned to the generated service account.
+    If the object is not set in the input variables of the module, IAM authorization will be used.
   EOF
-  nullable    = false
+  nullable    = true
   type = object({
-    name                        = optional(string)
-    name_prefix                 = optional(string)
-    description                 = optional(string, "Service account for Object storage admin.")
-    existing_account_id         = optional(string)
-    existing_account_access_key = optional(string)
-    existing_account_secret_key = optional(string)
+    id         = optional(string)
+    access_key = optional(string)
+    secret_key = optional(string)
   })
+
   validation {
-    condition     = !(var.storage_admin_service_account.name != null && var.storage_admin_service_account.name_prefix != null)
-    error_message = "Attributes \"name\" and \"name_prefix\" conflicts. Only one of them should be used."
+    condition     = !(var.existing_service_account.id == null && var.existing_service_account.access_key != null)
+    error_message = "Cannot use attribute \"access_key\" when attribute \"id\" is not set."
   }
   validation {
-    condition     = !(var.storage_admin_service_account.name != null && var.storage_admin_service_account.existing_account_id != null)
-    error_message = "Attributes \"name\" and \"existing_account_id\" conflicts. Only one of them should be used."
-  }
-  validation {
-    condition     = !(var.storage_admin_service_account.name_prefix != null && var.storage_admin_service_account.existing_account_id != null)
-    error_message = "Attributes \"name_prefix\" and \"existing_account_id\" conflicts. Only one of them should be used."
-  }
-  validation {
-    condition     = !(var.storage_admin_service_account.existing_account_id == null && var.storage_admin_service_account.existing_account_access_key != null)
-    error_message = "Cannot use attribute \"existing_account_access_key\" when attribute \"existing_account_id\" is not set."
-  }
-  validation {
-    condition     = !(var.storage_admin_service_account.existing_account_id == null && var.storage_admin_service_account.existing_account_secret_key != null)
-    error_message = "Cannot use attribute \"existing_account_secret_key\" when attribute \"existing_account_id\" is not set."
+    condition     = !(var.existing_service_account.id == null && var.existing_service_account.secret_key != null)
+    error_message = "Cannot use attribute \"secret_key\" when attribute \"id\" is not set."
   }
   default = {}
 }

@@ -28,10 +28,11 @@ module "s3" {
     ]
   }
 
-  https = {
-    certificate = {
-      public_dns_zone_id = var.public_dns_zone_id
-      domains            = var.domains
-    }
-  }
+  #   https = {
+  #     certificate = {
+  #       public_dns_zone_id = <Your Public DNS Zone ID>
+  #       domains            = <Your Domains>
+
+  #     }
+  #   }
 }

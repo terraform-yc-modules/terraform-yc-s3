@@ -83,7 +83,7 @@ data "aws_iam_policy_document" "this" {
   }
 
   dynamic "statement" {
-    for_each = range(var.policy.enabled || var.policy_console.enabled ? 1 : 0)
+    for_each = range(var.policy.enabled && var.existing_service_account.id != null || var.policy_console.enabled && var.existing_service_account.id != null ? 1 : 0)
     content {
       sid     = "default-rule-for-storage-admin-service-account"
       effect  = "Allow"
@@ -94,18 +94,10 @@ data "aws_iam_policy_document" "this" {
       ]
 
       dynamic "principals" {
-        for_each = range(var.storage_admin_service_account.existing_account_id != null ? 1 : 0)
+        for_each = range(var.existing_service_account.id != null ? 1 : 0)
         content {
           type        = "CanonicalUser"
-          identifiers = [var.storage_admin_service_account.existing_account_id]
-        }
-      }
-
-      dynamic "principals" {
-        for_each = range(var.storage_admin_service_account.existing_account_id == null ? 1 : 0)
-        content {
-          type        = "CanonicalUser"
-          identifiers = [yandex_iam_service_account.storage_admin[0].id]
+          identifiers = [var.existing_service_account.id]
         }
       }
     }
