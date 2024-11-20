@@ -11,4 +11,7 @@ module "s3" {
   source = "../../"
 
   bucket_name = "simple-bucket-${random_string.unique_id.result}"
+  versioning = {
+    enabled = true
+  }
 }
