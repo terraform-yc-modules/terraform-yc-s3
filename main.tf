@@ -125,6 +125,33 @@ resource "yandex_storage_bucket" "this" {
       prefix                                 = lifecycle_rule.value.prefix
       abort_incomplete_multipart_upload_days = lifecycle_rule.value.abort_incomplete_multipart_upload_days
 
+      dynamic "filter" {
+        for_each = range(lifecycle_rule.value.filter != null ? 1 : 0)
+        content {
+          object_size_greater_than = lifecycle_rule.value.filter.object_size_greater_than
+          object_size_less_than    = lifecycle_rule.value.filter.object_size_less_than
+          prefix                   = lifecycle_rule.value.filter.prefix
+
+          dynamic "tag" {
+            for_each = range(lifecycle_rule.value.filter.tag != null ? 1 : 0)
+            content {
+              key   = lifecycle_rule.value.filter.tag.key
+              value = lifecycle_rule.value.filter.tag.value
+            }
+          }
+
+          dynamic "and" {
+            for_each = range(lifecycle_rule.value.filter.and != null ? 1 : 0)
+            content {
+              object_size_greater_than = lifecycle_rule.value.filter.and.object_size_greater_than
+              object_size_less_than    = lifecycle_rule.value.filter.and.object_size_less_than
+              prefix                   = lifecycle_rule.value.filter.and.prefix
+              tags                     = lifecycle_rule.value.filter.and.tags
+            }
+          }
+        }
+      }
+
       dynamic "expiration" {
         for_each = range(lifecycle_rule.value.expiration != null ? 1 : 0)
         content {
@@ -137,7 +164,8 @@ resource "yandex_storage_bucket" "this" {
       dynamic "noncurrent_version_expiration" {
         for_each = range(lifecycle_rule.value.noncurrent_version_expiration != null ? 1 : 0)
         content {
-          days = lifecycle_rule.value.noncurrent_version_expiration.days
+          days                      = lifecycle_rule.value.noncurrent_version_expiration.days
+          newer_noncurrent_versions = lifecycle_rule.value.noncurrent_version_expiration.newer_noncurrent_versions
         }
       }
 
@@ -153,8 +181,9 @@ resource "yandex_storage_bucket" "this" {
       dynamic "noncurrent_version_transition" {
         for_each = range(lifecycle_rule.value.noncurrent_version_transition != null ? 1 : 0)
         content {
-          days          = lifecycle_rule.value.noncurrent_version_transition.days
-          storage_class = lifecycle_rule.value.noncurrent_version_transition.storage_class
+          days                      = lifecycle_rule.value.noncurrent_version_transition.days
+          newer_noncurrent_versions = lifecycle_rule.value.noncurrent_version_transition.newer_noncurrent_versions
+          storage_class             = lifecycle_rule.value.noncurrent_version_transition.storage_class
         }
       }
     }
@@ -175,9 +204,10 @@ resource "yandex_storage_bucket" "this" {
   tags = var.tags
 
   # Extended parameters of the bucket which use extended API and requires IAM token to be set in provider block.
-  folder_id             = local.folder_id
-  max_size              = var.max_size
-  default_storage_class = var.default_storage_class
+  folder_id               = local.folder_id
+  max_size                = var.max_size
+  default_storage_class   = var.default_storage_class
+  disabled_statickey_auth = var.disabled_statickey_auth
 
   dynamic "anonymous_access_flags" {
     for_each = range(var.anonymous_access_flags != null ? 1 : 0)
