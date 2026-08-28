@@ -63,16 +63,6 @@ resource "yandex_storage_bucket" "this" {
   force_destroy = var.force_destroy
   acl           = var.acl
 
-  dynamic "grant" {
-    for_each = var.grant
-    content {
-      id          = grant.value.id
-      type        = grant.value.type
-      uri         = grant.value.uri
-      permissions = grant.value.permissions
-    }
-  }
-
   dynamic "cors_rule" {
     for_each = var.cors_rule
     content {
@@ -204,9 +194,6 @@ resource "yandex_storage_bucket" "this" {
       certificate_id = var.https.existing_certificate_id == null ? yandex_cm_certificate.this[0].id : var.https.existing_certificate_id
     }
   }
-
-  policy = try(data.aws_iam_policy_document.this[0].json, null)
-
 
   lifecycle {
     precondition {

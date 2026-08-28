@@ -103,3 +103,24 @@ data "aws_iam_policy_document" "this" {
     }
   }
 }
+
+resource "yandex_storage_bucket_grant" "this" {
+  count  = length(var.grant) > 0 ? 1 : 0
+  bucket = yandex_storage_bucket.this.bucket
+
+  dynamic "grant" {
+    for_each = var.grant
+    content {
+      id          = grant.value.id
+      type        = grant.value.type
+      uri         = grant.value.uri
+      permissions = grant.value.permissions
+    }
+  }
+}
+
+resource "yandex_storage_bucket_policy" "this" {
+  count  = var.policy.enabled || var.policy_console.enabled ? 1 : 0
+  bucket = yandex_storage_bucket.this.bucket
+  policy = data.aws_iam_policy_document.this[0].json
+}
