@@ -555,6 +555,23 @@ variable "lifecycle_rule" {
       storage_class             = string
     }))
   }))
+
+  validation {
+    condition = alltrue([
+      for rule in var.lifecycle_rule :
+      contains(["COLD", "STANDARD_IA", "ICE", "INTELLIGENT_TIERING"], rule.transition.storage_class) if rule.transition != null
+    ])
+    error_message = "Lifecycle transition storage_class must be one of \"COLD\", \"STANDARD_IA\", \"ICE\", or \"INTELLIGENT_TIERING\" (case sensitive)."
+  }
+
+  validation {
+    condition = alltrue([
+      for rule in var.lifecycle_rule :
+      contains(["COLD", "STANDARD_IA", "ICE", "INTELLIGENT_TIERING"], rule.noncurrent_version_transition.storage_class) if rule.noncurrent_version_transition != null
+    ])
+    error_message = "Lifecycle noncurrent_version_transition storage_class must be one of \"COLD\", \"STANDARD_IA\", \"ICE\", or \"INTELLIGENT_TIERING\" (case sensitive)."
+  }
+
   default = []
 }
 
@@ -666,9 +683,9 @@ variable "default_storage_class" {
 
 variable "disabled_statickey_auth" {
   description = <<EOF
-    (Optional) Disables static access key authentication for the bucket.
+    (Optional) Forbids static access key authentication to the bucket when set to `true`.
 
-    It will try to create bucket using IAM-token in provider block, not using access_key.
+    This controls the bucket authentication policy; it does not select how the Terraform provider authenticates.
   EOF
   type        = bool
   default     = null

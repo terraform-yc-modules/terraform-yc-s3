@@ -108,6 +108,9 @@ resource "yandex_storage_bucket_grant" "this" {
   count  = length(var.grant) > 0 ? 1 : 0
   bucket = yandex_storage_bucket.this.bucket
 
+  access_key = try(var.existing_service_account.access_key, null)
+  secret_key = try(var.existing_service_account.secret_key, null)
+
   dynamic "grant" {
     for_each = var.grant
     content {
@@ -123,4 +126,7 @@ resource "yandex_storage_bucket_policy" "this" {
   count  = var.policy.enabled || var.policy_console.enabled ? 1 : 0
   bucket = yandex_storage_bucket.this.bucket
   policy = data.aws_iam_policy_document.this[0].json
+
+  access_key = try(var.existing_service_account.access_key, null)
+  secret_key = try(var.existing_service_account.secret_key, null)
 }

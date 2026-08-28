@@ -227,6 +227,11 @@ resource "yandex_storage_bucket" "this" {
 
   lifecycle {
     precondition {
+      condition     = var.acl == null || length(var.grant) == 0
+      error_message = "Variables \"acl\" and \"grant\" are mutually exclusive. Set only one of them."
+    }
+
+    precondition {
       condition     = var.object_lock_configuration == null || (try(var.versioning.enabled, false) && var.object_lock_configuration != null)
       error_message = "Bucket versioning must be enabled for object lock."
     }
