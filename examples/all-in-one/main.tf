@@ -48,10 +48,17 @@ module "s3" {
     {
       enabled = true
       id      = "log"
-      prefix  = "log/"
+      filter = {
+        and = {
+          prefix = "log/"
+          tags = {
+            lifecycle = "enabled"
+          }
+        }
+      }
       transition = {
         days          = 30
-        storage_class = "COLD"
+        storage_class = "INTELLIGENT_TIERING"
       }
       expiration = {
         days = 90
