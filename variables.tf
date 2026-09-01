@@ -478,7 +478,7 @@ variable "lifecycle_rule" {
     Configuration attributes:
       enabled                                - (Required) Specifies lifecycle rule status.
       id                                     - (Optional) Unique identifier for the rule. Must be less than or equal to 255 characters in length.
-      prefix                                 - (Optional) Object key prefix identifying one or more objects to which the rule applies.
+      prefix                                 - (Optional) Legacy object key prefix identifying one or more objects to which the rule applies. It is mapped to `filter.prefix`.
       abort_incomplete_multipart_upload_days - (Optional) Specifies the number of days after initiating a multipart upload when the multipart upload must be completed.
       filter                                 - (Optional) Specifies the object filter for the lifecycle rule.
       expiration                             - (Optional) Specifies a period in the object's expire.

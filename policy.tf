@@ -105,8 +105,10 @@ data "aws_iam_policy_document" "this" {
 }
 
 resource "yandex_storage_bucket_grant" "this" {
-  count  = length(var.grant) > 0 ? 1 : 0
+  count  = var.acl != null || length(var.grant) > 0 ? 1 : 0
   bucket = yandex_storage_bucket.this.bucket
+
+  acl = var.acl
 
   access_key = try(var.existing_service_account.access_key, null)
   secret_key = try(var.existing_service_account.secret_key, null)

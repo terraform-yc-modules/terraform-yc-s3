@@ -61,7 +61,6 @@ resource "yandex_storage_bucket" "this" {
   secret_key = try(var.existing_service_account.secret_key, null)
 
   force_destroy = var.force_destroy
-  acl           = var.acl
 
   dynamic "cors_rule" {
     for_each = var.cors_rule
@@ -122,18 +121,17 @@ resource "yandex_storage_bucket" "this" {
     content {
       enabled                                = lifecycle_rule.value.enabled
       id                                     = lifecycle_rule.value.id
-      prefix                                 = lifecycle_rule.value.prefix
       abort_incomplete_multipart_upload_days = lifecycle_rule.value.abort_incomplete_multipart_upload_days
 
       dynamic "filter" {
-        for_each = range(lifecycle_rule.value.filter != null ? 1 : 0)
+        for_each = range(lifecycle_rule.value.filter != null || lifecycle_rule.value.prefix != null ? 1 : 0)
         content {
-          object_size_greater_than = lifecycle_rule.value.filter.object_size_greater_than
-          object_size_less_than    = lifecycle_rule.value.filter.object_size_less_than
-          prefix                   = lifecycle_rule.value.filter.prefix
+          object_size_greater_than = try(lifecycle_rule.value.filter.object_size_greater_than, null)
+          object_size_less_than    = try(lifecycle_rule.value.filter.object_size_less_than, null)
+          prefix                   = try(coalesce(try(lifecycle_rule.value.filter.prefix, null), lifecycle_rule.value.prefix), null)
 
           dynamic "tag" {
-            for_each = range(lifecycle_rule.value.filter.tag != null ? 1 : 0)
+            for_each = range(try(lifecycle_rule.value.filter.tag != null, false) ? 1 : 0)
             content {
               key   = lifecycle_rule.value.filter.tag.key
               value = lifecycle_rule.value.filter.tag.value
@@ -141,7 +139,7 @@ resource "yandex_storage_bucket" "this" {
           }
 
           dynamic "and" {
-            for_each = range(lifecycle_rule.value.filter.and != null ? 1 : 0)
+            for_each = range(try(lifecycle_rule.value.filter.and != null, false) ? 1 : 0)
             content {
               object_size_greater_than = lifecycle_rule.value.filter.and.object_size_greater_than
               object_size_less_than    = lifecycle_rule.value.filter.and.object_size_less_than
