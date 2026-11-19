@@ -478,8 +478,9 @@ variable "lifecycle_rule" {
     Configuration attributes:
       enabled                                - (Required) Specifies lifecycle rule status.
       id                                     - (Optional) Unique identifier for the rule. Must be less than or equal to 255 characters in length.
-      prefix                                 - (Optional) Object key prefix identifying one or more objects to which the rule applies.
+      prefix                                 - (Optional) Legacy object key prefix identifying one or more objects to which the rule applies. It is mapped to `filter.prefix`.
       abort_incomplete_multipart_upload_days - (Optional) Specifies the number of days after initiating a multipart upload when the multipart upload must be completed.
+      filter                                 - (Optional) Specifies the object filter for the lifecycle rule.
       expiration                             - (Optional) Specifies a period in the object's expire.
       transition                             - (Optional) Specifies a period in the object's transitions.
       noncurrent_version_expiration          - (Optional) Specifies when noncurrent object versions expire.
@@ -492,17 +493,26 @@ variable "lifecycle_rule" {
       days                         - (Optional) Specifies the number of days after object creation when the specific rule action takes effect.
       expired_object_delete_marker - (Optional) On a versioned bucket (versioning-enabled or versioning-suspended bucket), you can add this element in the lifecycle configuration to direct Object Storage to delete expired object delete markers.
 
+    The `filter` object supports the following attributes:
+      object_size_greater_than - (Optional) Specifies the minimum object size to which the rule applies.
+      object_size_less_than    - (Optional) Specifies the maximum object size to which the rule applies.
+      prefix                   - (Optional) Object key prefix identifying one or more objects to which the rule applies.
+      tag                      - (Optional) Specifies a single object tag to which the rule applies.
+      and                      - (Optional) Specifies a logical AND of the nested filter attributes.
+
     The `transition` object supports the following attributes:
       date          - (Optional) Specifies the date after which you want the corresponding action to take effect.
       days          - (Optional) Specifies the number of days after object creation when the specific rule action takes effect.
-      storage_class - (Required) Specifies the storage class to which you want the object to transition. Can only be `COLD` or `STANDARD_IA`.
+      storage_class - (Required) Specifies the storage class to which you want the object to transition. Can only be `COLD`, `STANDARD_IA`, `ICE`, or `INTELLIGENT_TIERING`.
 
     The `noncurrent_version_expiration` object supports the following attributes:
-      days - (Required) Specifies the number of days noncurrent object versions expire.
+      days                       - (Required) Specifies the number of days noncurrent object versions expire.
+      newer_noncurrent_versions  - (Optional) Specifies the number of newer noncurrent versions to retain.
 
     The `noncurrent_version_transition` object supports the following attributes:
-      days          - (Required) Specifies the number of days noncurrent object versions transition.
-      storage_class - (Required) Specifies the storage class to which you want the noncurrent object versions to transition. Can only be `COLD` or `STANDARD_IA`.
+      days                      - (Required) Specifies the number of days noncurrent object versions transition.
+      newer_noncurrent_versions - (Optional) Specifies the number of newer noncurrent versions to retain.
+      storage_class             - (Required) Specifies the storage class to which you want the noncurrent object versions to transition. Can only be `COLD`, `STANDARD_IA`, `ICE`, or `INTELLIGENT_TIERING`.
   EOF
   nullable    = false
   type = list(object({
@@ -510,6 +520,21 @@ variable "lifecycle_rule" {
     id                                     = optional(string)
     prefix                                 = optional(string)
     abort_incomplete_multipart_upload_days = optional(number)
+    filter = optional(object({
+      object_size_greater_than = optional(number)
+      object_size_less_than    = optional(number)
+      prefix                   = optional(string)
+      tag = optional(object({
+        key   = string
+        value = string
+      }))
+      and = optional(object({
+        object_size_greater_than = optional(number)
+        object_size_less_than    = optional(number)
+        prefix                   = optional(string)
+        tags                     = optional(map(string))
+      }))
+    }))
     expiration = optional(object({
       date                         = optional(string)
       days                         = optional(number)
@@ -521,13 +546,32 @@ variable "lifecycle_rule" {
       storage_class = string
     }))
     noncurrent_version_expiration = optional(object({
-      days = number
+      days                      = number
+      newer_noncurrent_versions = optional(number)
     }))
     noncurrent_version_transition = optional(object({
-      days          = number
-      storage_class = string
+      days                      = number
+      newer_noncurrent_versions = optional(number)
+      storage_class             = string
     }))
   }))
+
+  validation {
+    condition = alltrue([
+      for rule in var.lifecycle_rule :
+      contains(["COLD", "STANDARD_IA", "ICE", "INTELLIGENT_TIERING"], rule.transition.storage_class) if rule.transition != null
+    ])
+    error_message = "Lifecycle transition storage_class must be one of \"COLD\", \"STANDARD_IA\", \"ICE\", or \"INTELLIGENT_TIERING\" (case sensitive)."
+  }
+
+  validation {
+    condition = alltrue([
+      for rule in var.lifecycle_rule :
+      contains(["COLD", "STANDARD_IA", "ICE", "INTELLIGENT_TIERING"], rule.noncurrent_version_transition.storage_class) if rule.noncurrent_version_transition != null
+    ])
+    error_message = "Lifecycle noncurrent_version_transition storage_class must be one of \"COLD\", \"STANDARD_IA\", \"ICE\", or \"INTELLIGENT_TIERING\" (case sensitive)."
+  }
+
   default = []
 }
 
@@ -635,6 +679,16 @@ variable "default_storage_class" {
     error_message = "Available values are \"STANDARD\", \"COLD\" and \"ICE\" (case sensitive)."
   }
   default = "STANDARD"
+}
+
+variable "disabled_statickey_auth" {
+  description = <<EOF
+    (Optional) Forbids static access key authentication to the bucket when set to `true`.
+
+    This controls the bucket authentication policy; it does not select how the Terraform provider authenticates.
+  EOF
+  type        = bool
+  default     = null
 }
 
 variable "anonymous_access_flags" {

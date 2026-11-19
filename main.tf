@@ -61,17 +61,6 @@ resource "yandex_storage_bucket" "this" {
   secret_key = try(var.existing_service_account.secret_key, null)
 
   force_destroy = var.force_destroy
-  acl           = var.acl
-
-  dynamic "grant" {
-    for_each = var.grant
-    content {
-      id          = grant.value.id
-      type        = grant.value.type
-      uri         = grant.value.uri
-      permissions = grant.value.permissions
-    }
-  }
 
   dynamic "cors_rule" {
     for_each = var.cors_rule
@@ -132,8 +121,34 @@ resource "yandex_storage_bucket" "this" {
     content {
       enabled                                = lifecycle_rule.value.enabled
       id                                     = lifecycle_rule.value.id
-      prefix                                 = lifecycle_rule.value.prefix
       abort_incomplete_multipart_upload_days = lifecycle_rule.value.abort_incomplete_multipart_upload_days
+
+      dynamic "filter" {
+        for_each = range(lifecycle_rule.value.filter != null || lifecycle_rule.value.prefix != null ? 1 : 0)
+        content {
+          object_size_greater_than = try(lifecycle_rule.value.filter.object_size_greater_than, null)
+          object_size_less_than    = try(lifecycle_rule.value.filter.object_size_less_than, null)
+          prefix                   = try(coalesce(try(lifecycle_rule.value.filter.prefix, null), lifecycle_rule.value.prefix), null)
+
+          dynamic "tag" {
+            for_each = range(try(lifecycle_rule.value.filter.tag != null, false) ? 1 : 0)
+            content {
+              key   = lifecycle_rule.value.filter.tag.key
+              value = lifecycle_rule.value.filter.tag.value
+            }
+          }
+
+          dynamic "and" {
+            for_each = range(try(lifecycle_rule.value.filter.and != null, false) ? 1 : 0)
+            content {
+              object_size_greater_than = lifecycle_rule.value.filter.and.object_size_greater_than
+              object_size_less_than    = lifecycle_rule.value.filter.and.object_size_less_than
+              prefix                   = lifecycle_rule.value.filter.and.prefix
+              tags                     = lifecycle_rule.value.filter.and.tags
+            }
+          }
+        }
+      }
 
       dynamic "expiration" {
         for_each = range(lifecycle_rule.value.expiration != null ? 1 : 0)
@@ -147,7 +162,8 @@ resource "yandex_storage_bucket" "this" {
       dynamic "noncurrent_version_expiration" {
         for_each = range(lifecycle_rule.value.noncurrent_version_expiration != null ? 1 : 0)
         content {
-          days = lifecycle_rule.value.noncurrent_version_expiration.days
+          days                      = lifecycle_rule.value.noncurrent_version_expiration.days
+          newer_noncurrent_versions = lifecycle_rule.value.noncurrent_version_expiration.newer_noncurrent_versions
         }
       }
 
@@ -163,8 +179,9 @@ resource "yandex_storage_bucket" "this" {
       dynamic "noncurrent_version_transition" {
         for_each = range(lifecycle_rule.value.noncurrent_version_transition != null ? 1 : 0)
         content {
-          days          = lifecycle_rule.value.noncurrent_version_transition.days
-          storage_class = lifecycle_rule.value.noncurrent_version_transition.storage_class
+          days                      = lifecycle_rule.value.noncurrent_version_transition.days
+          newer_noncurrent_versions = lifecycle_rule.value.noncurrent_version_transition.newer_noncurrent_versions
+          storage_class             = lifecycle_rule.value.noncurrent_version_transition.storage_class
         }
       }
     }
@@ -185,9 +202,10 @@ resource "yandex_storage_bucket" "this" {
   tags = var.tags
 
   # Extended parameters of the bucket which use extended API and requires IAM token to be set in provider block.
-  folder_id             = local.folder_id
-  max_size              = var.max_size
-  default_storage_class = var.default_storage_class
+  folder_id               = local.folder_id
+  max_size                = var.max_size
+  default_storage_class   = var.default_storage_class
+  disabled_statickey_auth = var.disabled_statickey_auth
 
   dynamic "anonymous_access_flags" {
     for_each = range(var.anonymous_access_flags != null ? 1 : 0)
@@ -205,10 +223,12 @@ resource "yandex_storage_bucket" "this" {
     }
   }
 
-  policy = try(data.aws_iam_policy_document.this[0].json, null)
-
-
   lifecycle {
+    precondition {
+      condition     = var.acl == null || length(var.grant) == 0
+      error_message = "Variables \"acl\" and \"grant\" are mutually exclusive. Set only one of them."
+    }
+
     precondition {
       condition     = var.object_lock_configuration == null || (try(var.versioning.enabled, false) && var.object_lock_configuration != null)
       error_message = "Bucket versioning must be enabled for object lock."
